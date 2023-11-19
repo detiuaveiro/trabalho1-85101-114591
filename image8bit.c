@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "instrumentation.h"
+#include <string.h>
 
 // The data structure
 //
@@ -154,6 +155,7 @@ void ImageInit(void) { ///
 #define PIXMEM InstrCount[0]
 // Add more macros here...
 
+
 // TIP: Search for PIXMEM or InstrCount to see where it is incremented!
 
 
@@ -167,12 +169,44 @@ void ImageInit(void) { ///
 /// On success, a new image is returned.
 /// (The caller is responsible for destroying the returned image!)
 /// On failure, returns NULL and errno/errCause are set accordingly.
+
+// Function to allocate memory for a new image and initialize it
+static Image createInitializedImage(int width, int height, uint8 maxval) {
+  Image img = malloc(sizeof(struct image)); // Allocate memory for the image structure
+
+  if (img == NULL) {
+    errCause = "Memory allocation error";
+    return NULL; // Return NULL on failure
+  }
+
+  // Initialize the image structure fields
+  img->width = width;
+  img->height = height;
+  img->maxval = maxval;
+
+  // Allocate memory for the pixel array and initialize it to black (0)
+  img->pixel = malloc(width * height * sizeof(uint8));
+
+  if (img->pixel == NULL) {
+    errCause = "Memory allocation error";
+    free(img); // Free the previously allocated image structure
+    return NULL; // Return NULL on failure
+  }
+
+  // Initialize pixel array to black
+  memset(img->pixel, 0, width * height * sizeof(uint8));
+
+  return img; // Return the initialized image
+}
 Image ImageCreate(int width, int height, uint8 maxval) { ///
   assert (width >= 0);
   assert (height >= 0);
   assert (0 < maxval && maxval <= PixMax);
   // Insert your code here!
+  return createInitializedImage(width, height, maxval);
+
 }
+
 
 /// Destroy the image pointed to by (*imgp).
 ///   imgp : address of an Image variable.
@@ -182,7 +216,22 @@ Image ImageCreate(int width, int height, uint8 maxval) { ///
 void ImageDestroy(Image* imgp) { ///
   assert (imgp != NULL);
   // Insert your code here!
+
+  // Check if the image pointer is NULL
+  if (*imgp == NULL) {
+    return; // No operation if the image pointer is NULL
+  }
+
+  // Free the memory allocated for the pixel array
+  free((*imgp)->pixel);
+
+  // Free the memory allocated for the image structure
+  free(*imgp);
+
+  // Set the image pointer to NULL to ensure it points to a valid memory location
+  *imgp = NULL;
 }
+
 
 
 /// PGM file operations
