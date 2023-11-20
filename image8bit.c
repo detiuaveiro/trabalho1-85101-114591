@@ -216,9 +216,8 @@ Image ImageCreate(int width, int height, uint8 maxval) { ///
 void ImageDestroy(Image* imgp) { ///
   assert (imgp != NULL);
   // Insert your code here!
-
-  // Check if the image pointer is NULL
-  if (*imgp == NULL) {
+  
+  if (*imgp == NULL) {          // Check if the image pointer is NULL
     return; // No operation if the image pointer is NULL
   }
 
@@ -343,6 +342,30 @@ int ImageMaxval(Image img) { ///
 void ImageStats(Image img, uint8* min, uint8* max) { ///
   assert (img != NULL);
   // Insert your code here!
+  // Ensure the image has pixels
+  if (img->pixel == NULL) {
+    errCause = "Image has no pixel data in ImageStats";
+    return;
+  }
+
+  // Initialize min and max with extreme values
+  *min = UINT8_MAX;
+  *max = 0;
+
+  // Iterate through the pixel array to find min and max
+  for (int i = 0; i < img->width * img->height; ++i) {
+    uint8 pixelValue = img->pixel[i];
+
+    // Update min and max accordingly
+    if (pixelValue < *min) {
+      *min = pixelValue;
+    }
+    if (pixelValue > *max) {
+      *max = pixelValue;
+    }
+  }
+  
+
 }
 
 /// Check if pixel position (x,y) is inside img.
@@ -355,6 +378,8 @@ int ImageValidPos(Image img, int x, int y) { ///
 int ImageValidRect(Image img, int x, int y, int w, int h) { ///
   assert (img != NULL);
   // Insert your code here!
+  // Check if the rectangle is completely inside the image
+  return (x >= 0) && (y >= 0) && (w > 0) && (h > 0) && (x + w <= img->width) && (y + h <= img->height);
 }
 
 /// Pixel get & set operations
