@@ -394,6 +394,7 @@ int ImageValidRect(Image img, int x, int y, int w, int h) { ///
 static inline int G(Image img, int x, int y) {
   int index;
   // Insert your code here!
+  index = y * img->width + x;
   assert (0 <= index && index < img->width*img->height);
   return index;
 }
@@ -429,6 +430,18 @@ void ImageSetPixel(Image img, int x, int y, uint8 level) { ///
 void ImageNegative(Image img) { ///
   assert (img != NULL);
   // Insert your code here!
+
+  int width = ImageWidth(img);
+  int height = ImageHeight(img);
+
+  for(int x = 0; x < width; x++){
+    for(int y = 0; y < height; y++){
+      uint8 originalPixel = ImageGetPixel(img, x, y);
+      uint8 negativePixel = PixMax - originalPixel;
+      ImageSetPixel(img, x, y, negativePixel);
+    }
+  }
+  
 }
 
 /// Apply threshold to image.
@@ -437,6 +450,20 @@ void ImageNegative(Image img) { ///
 void ImageThreshold(Image img, uint8 thr) { ///
   assert (img != NULL);
   // Insert your code here!
+  int width = ImageWidth(img);
+  int height = ImageHeight(img);
+
+  for(int x = 0; x < width; x++){
+    for(int y = 0; y < height; y++){
+      uint8 originalPixel = ImageGetPixel(img, x, y);
+
+      //Apply threshold: set pixels below threshold to black, and above or equal to threshold to white
+      uint8 resultPixel = (originalPixel < thr) ? 0 : PixMax;
+
+      // Set the new pixel value in the image
+      ImageSetPixel(img, x, y, resultPixel);
+    }
+  }
 }
 
 /// Brighten image by a factor.
@@ -447,6 +474,7 @@ void ImageBrighten(Image img, double factor) { ///
   assert (img != NULL);
   // ? assert (factor >= 0.0);
   // Insert your code here!
+  
 }
 
 
@@ -474,6 +502,24 @@ void ImageBrighten(Image img, double factor) { ///
 Image ImageRotate(Image img) { ///
   assert (img != NULL);
   // Insert your code here!
+  
+  int width = ImageWidth(img);
+  int height = ImageHeight(img);
+
+  Image rotatedImg = ImageCreate(height, width, ImageMaxval(img));
+  if (rotatedImg == NULL){
+    return NULL;
+  }
+
+  for (int y = 0; y < height; y++){
+    for(int x = 0; x < width; x++){
+      uint8 originalPixel = ImageGetPixel(img, x, y);
+      ImageSetPixel(rotatedImg, y, width - 1 - x, originalPixel);
+
+    }
+  }
+
+  return rotatedImg;
 }
 
 /// Mirror an image = flip left-right.
