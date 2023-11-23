@@ -740,7 +740,56 @@ int ImageLocateSubImage(Image img1, int* px, int* py, Image img2) { ///
 /// Each pixel is substituted by the mean of the pixels in the rectangle
 /// [x-dx, x+dx]x[y-dy, y+dy].
 /// The image is changed in-place.
-void ImageBlur(Image img, int dx, int dy) { ///
+void ImageBlur(Image img, int dx, int dy) {
+  assert (img != NULL);
   // Insert your code here!
-}
+  int width = ImageWidth(img);
+  int height = ImageHeight(img);
 
+  // Create a temporary image to store the blurred image
+  Image blurredImg = ImageCreate(width, height, ImageMaxval(img));
+
+  if (blurredImg == NULL) {
+    // Return if ImageCreate fails
+    return;
+  }
+
+  for (int i = 0; i < height; i++) {
+    for (int j = 0; j < width; j++){
+      int sum = 0;
+      int count = 0;
+
+      // Iterate over the pixels in the rectangle [x-dx, x+dx]x[y-dy, y+dy]
+      for (int k = i - dy; k <= i + dy; k++) {
+        for (int l = j - dx; l <= j + dx; l++) {
+          // Check if the current pixel is inside the image
+          if (ImageValidPos(img, l, k)) {
+            // Add the pixel value to the sum and increment the count
+            sum += ImageGetPixel(img, l, k);
+            count++;
+          }
+        }
+      }
+
+      // Calculate the mean of the pixels in the rectangle
+      double mean = (double)sum / count;
+
+      // Add 0.5 before casting to round the result to the nearest integer
+      uint8 resultPixel = (uint8)(mean + 0.5);
+
+      // Ensure the result does not exceed the maximum pixel value
+      resultPixel = (resultPixel > PixMax) ? PixMax : resultPixel;
+
+      // Set the pixel in the blurred image
+      ImageSetPixel(blurredImg, j, i, resultPixel);
+    }
+  }
+
+  // Copy the blurred image to the original image
+  free(img->pixel);
+
+  img->pixel = blurredImg->pixel;
+
+  // Destroy the blurred image
+  ImageDestroy(&blurredImg);
+}
