@@ -479,15 +479,17 @@ void ImageBrighten(Image img, double factor) { ///
   int width = ImageWidth(img);
   int height = ImageHeight(img);
 
-  for (int y = 0; y < height; y++) {
-    for (int x = 0; x < width; x++) {
+  for (int x = 0; x < width; x++) {
+    for (int y = 0; y < height; y++) {
       uint8 originalPixel = ImageGetPixel(img, x, y);
 
-      double brightenedValue = originalPixel * factor; // Multiply the original pixel value by the brightening factor
+      // Add 0.5 before casting to round the result to the nearest integer
+      uint8 resultPixel = (uint8)((originalPixel * factor) + 0.5);
 
-      uint8 resultPixel = (brightenedValue > PixMax) ? PixMax : (uint8)brightenedValue;  // Ensure it doesn't exceed the maximum pixel value
+      // Ensure the result does not exceed the maximum pixel value (255)
+      resultPixel = (resultPixel > PixMax) ? PixMax : resultPixel;
 
-      ImageSetPixel(img, x, y, resultPixel); //Set brightened pixel 
+      ImageSetPixel(img, x, y, resultPixel);
     }
   }
 }
@@ -644,23 +646,24 @@ void ImageBlend(Image img1, int x, int y, Image img2, double alpha) { ///
   assert (ImageValidRect(img1, x, y, img2->width, img2->height));
   // Insert your code here!
 
-  int img2Width = ImageWidth(img2);
-  int img2Height = ImageHeight(img2);
+  int width = ImageWidth(img2);
+  int height = ImageHeight(img2);
 
-  for (int i = 0; i < img2Height; i++) {
-    for (int j = 0; j < img2Width; j++) {
-      // Get pixel values from img1 and img2 at the specified position
-      uint8 pixel1 = ImageGetPixel(img1, x + j, y + i);
-      uint8 pixel2 = ImageGetPixel(img2, j, i);
+  for (int i = 0; i < width; i++) {
+    for (int j = 0; j < height; j++) {
+      uint8 pixel1 = ImageGetPixel(img1, x + i, y + j);
+      uint8 pixel2 = ImageGetPixel(img2, i, j);
 
-      // Blend the pixels using alpha
+      // Blend the pixels using the specified alpha value
       double blendedValue = (1.0 - alpha) * pixel1 + alpha * pixel2;
 
-      // Saturate the result to ensure it doesn't overflow or underflow
-      uint8 resultPixel = (blendedValue > PixMax) ? PixMax : ((blendedValue < 0) ? 0 : (uint8)blendedValue);
+      // Add 0.5 before casting to round the result to the nearest integer
+      uint8 resultPixel = (uint8)(blendedValue + 0.5);
 
-      // Set the blended pixel value in img1
-      ImageSetPixel(img1, x + j, y + i, resultPixel);
+      // Ensure the result does not exceed the maximum pixel value
+      resultPixel = (resultPixel > PixMax) ? PixMax : resultPixel;
+
+      ImageSetPixel(img1, x + i, y + j, resultPixel);
     }
   }
 }
