@@ -786,10 +786,15 @@ void ImageBlur(Image img, int dx, int dy) {
   }
 
   // Copy the blurred image to the original image
-  free(img->pixel);
-
+  uint8_t* oldPixels = img->pixel;
   img->pixel = blurredImg->pixel;
+
+  // Prevent ImageDestroy from freeing the pixel data
+  blurredImg->pixel = NULL;
 
   // Destroy the blurred image
   ImageDestroy(&blurredImg);
+
+  // Now it's safe to free the old pixel data
+  free(oldPixels);
 }

@@ -7,7 +7,7 @@
 
 CFLAGS = -Wall -O2 -g
 
-
+LDLIBA = -lm
 
 PROGS = imageTool imageTest
 
