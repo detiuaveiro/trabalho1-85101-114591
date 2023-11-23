@@ -431,14 +431,14 @@ void ImageNegative(Image img) { ///
   assert (img != NULL);
   // Insert your code here!
 
-  int width = ImageWidth(img);
-  int height = ImageHeight(img);
+  int width = ImageWidth(img);  
+  int height = ImageHeight(img); 
 
-  for(int x = 0; x < width; x++){
-    for(int y = 0; y < height; y++){
-      uint8 originalPixel = ImageGetPixel(img, x, y);
-      uint8 negativePixel = PixMax - originalPixel;
-      ImageSetPixel(img, x, y, negativePixel);
+  for(int x = 0; x < width; x++){         
+    for(int y = 0; y < height; y++){   //Goes through each pixel
+      uint8 originalPixel = ImageGetPixel(img, x, y); //Get each pixel 
+      uint8 negativePixel = PixMax - originalPixel;   //255(maxval) - Original pixel level in the same position
+      ImageSetPixel(img, x, y, negativePixel);        //Set the pixel as its "negative"
     }
   }
   
@@ -450,18 +450,18 @@ void ImageNegative(Image img) { ///
 void ImageThreshold(Image img, uint8 thr) { ///
   assert (img != NULL);
   // Insert your code here!
-  int width = ImageWidth(img);
-  int height = ImageHeight(img);
+  int width = ImageWidth(img);    
+  int height = ImageHeight(img); 
 
   for(int x = 0; x < width; x++){
     for(int y = 0; y < height; y++){
       uint8 originalPixel = ImageGetPixel(img, x, y);
 
-      //Apply threshold: set pixels below threshold to black, and above or equal to threshold to white
-      uint8 resultPixel = (originalPixel < thr) ? 0 : PixMax;
+      uint8 resultPixel = (originalPixel < thr) ? 0 : PixMax; // Check if the pixel is < or >= than thr
+                                                              // < 0 (true), than level = 0
+                                                              // >= 0 (false), than level = 255 
 
-      // Set the new pixel value in the image
-      ImageSetPixel(img, x, y, resultPixel);
+      ImageSetPixel(img, x, y, resultPixel);  //Set new pixel 
     }
   }
 }
@@ -474,7 +474,22 @@ void ImageBrighten(Image img, double factor) { ///
   assert (img != NULL);
   // ? assert (factor >= 0.0);
   // Insert your code here!
-  
+  assert(factor >= 0.0);
+
+  int width = ImageWidth(img);
+  int height = ImageHeight(img);
+
+  for (int y = 0; y < height; y++) {
+    for (int x = 0; x < width; x++) {
+      uint8 originalPixel = ImageGetPixel(img, x, y);
+
+      double brightenedValue = originalPixel * factor; // Multiply the original pixel value by the brightening factor
+
+      uint8 resultPixel = (brightenedValue > PixMax) ? PixMax : (uint8)brightenedValue;  // Ensure it doesn't exceed the maximum pixel value
+
+      ImageSetPixel(img, x, y, resultPixel); //Set brightened pixel 
+    }
+  }
 }
 
 
@@ -506,15 +521,18 @@ Image ImageRotate(Image img) { ///
   int width = ImageWidth(img);
   int height = ImageHeight(img);
 
-  Image rotatedImg = ImageCreate(height, width, ImageMaxval(img));
+  Image rotatedImg = ImageCreate(height, width, ImageMaxval(img)); //Create new image with swapped width and height
+  
   if (rotatedImg == NULL){
     return NULL;
   }
 
   for (int y = 0; y < height; y++){
-    for(int x = 0; x < width; x++){
+    for(int x = 0; x < width; x++){ 
       uint8 originalPixel = ImageGetPixel(img, x, y);
-      ImageSetPixel(rotatedImg, y, width - 1 - x, originalPixel);
+      ImageSetPixel(rotatedImg, y, width - 1 - x, originalPixel); //Set rotated pixel
+      //    "width - 1" -> This part calculates the maximum horizontal index in the original image. Since indexing starts from 0, the maximum index is width - 1.
+      //    "width - 1 - x" -> Subtracting x from the maximum index effectively mirrors the position of x in the original image to the corresponding position in the mirrored image.
 
     }
   }
@@ -532,6 +550,26 @@ Image ImageRotate(Image img) { ///
 Image ImageMirror(Image img) { ///
   assert (img != NULL);
   // Insert your code here!
+
+  int width = ImageWidth(img);
+  int height = ImageHeight(img);
+
+  // Create a new image with the same dimensions
+  Image mirroredImg = ImageCreate(width, height, ImageMaxval(img));
+  if (mirroredImg == NULL) {
+    // Return NULL if ImageCreate fails
+    return NULL;
+  }
+
+  for (int y = 0; y < height; y++) {
+    for (int x = 0; x < width; x++) {
+      // Copy pixels from the original image to the mirrored image with reversed order
+      uint8 originalPixel = ImageGetPixel(img, x, y);
+      ImageSetPixel(mirroredImg, width - 1 - x, y, originalPixel);
+    }
+  }
+
+  return mirroredImg;
 }
 
 /// Crop a rectangular subimage from img.
@@ -550,6 +588,24 @@ Image ImageCrop(Image img, int x, int y, int w, int h) { ///
   assert (img != NULL);
   assert (ImageValidRect(img, x, y, w, h));
   // Insert your code here!
+  
+   // Create a new image with the specified width and height
+  Image croppedImg = ImageCreate(w, h, ImageMaxval(img));
+
+  if (croppedImg == NULL) {
+    // Return NULL if ImageCreate fails
+    return NULL;
+  }
+
+  for (int i = 0; i < w; i++) {
+    for (int j = 0; j < h; j++) {
+      // Copy pixels from the original image to the cropped image
+      uint8 originalPixel = ImageGetPixel(img, x + j, y + i);
+      ImageSetPixel(croppedImg, j, i, originalPixel);
+    }
+  }
+
+  return croppedImg;
 }
 
 
@@ -564,6 +620,16 @@ void ImagePaste(Image img1, int x, int y, Image img2) { ///
   assert (img2 != NULL);
   assert (ImageValidRect(img1, x, y, img2->width, img2->height));
   // Insert your code here!
+  int img2Width = ImageWidth(img2);
+  int img2Height = ImageHeight(img2);
+
+  for (int i = 0; i < img2Height; i++) {
+    for (int j = 0; j < img2Width; j++) {
+      // Copy pixels from img2 to img1 at the specified position
+      uint8 pixel = ImageGetPixel(img2, j, i);
+      ImageSetPixel(img1, x + j, y + i, pixel);
+    }
+  }
 }
 
 /// Blend an image into a larger image.
@@ -577,6 +643,26 @@ void ImageBlend(Image img1, int x, int y, Image img2, double alpha) { ///
   assert (img2 != NULL);
   assert (ImageValidRect(img1, x, y, img2->width, img2->height));
   // Insert your code here!
+
+  int img2Width = ImageWidth(img2);
+  int img2Height = ImageHeight(img2);
+
+  for (int i = 0; i < img2Height; i++) {
+    for (int j = 0; j < img2Width; j++) {
+      // Get pixel values from img1 and img2 at the specified position
+      uint8 pixel1 = ImageGetPixel(img1, x + j, y + i);
+      uint8 pixel2 = ImageGetPixel(img2, j, i);
+
+      // Blend the pixels using alpha
+      double blendedValue = (1.0 - alpha) * pixel1 + alpha * pixel2;
+
+      // Saturate the result to ensure it doesn't overflow or underflow
+      uint8 resultPixel = (blendedValue > PixMax) ? PixMax : ((blendedValue < 0) ? 0 : (uint8)blendedValue);
+
+      // Set the blended pixel value in img1
+      ImageSetPixel(img1, x + j, y + i, resultPixel);
+    }
+  }
 }
 
 /// Compare an image to a subimage of a larger image.
@@ -587,6 +673,29 @@ int ImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
   assert (img2 != NULL);
   assert (ImageValidPos(img1, x, y));
   // Insert your code here!
+
+  int img2Width = ImageWidth(img2);
+  int img2Height = ImageHeight(img2);
+
+  // Ensure that the subimage fits within the larger image at the specified position
+  if (!ImageValidRect(img1, x, y, img2Width, img2Height)) {
+    return 0;
+  }
+
+  for (int i = 0; i < img2Height; i++) {
+    for (int j = 0; j < img2Width; j++) {
+      // Get pixel values from img1 and img2 at the specified position
+      uint8 pixel1 = ImageGetPixel(img1, x + j, y + i);
+      uint8 pixel2 = ImageGetPixel(img2, j, i);
+
+      // Check if the pixels match
+      if (pixel1 != pixel2) {
+        return 0;  // Pixels do not match
+      }
+    }
+  }
+
+  return 1;  // All pixels match
 }
 
 /// Locate a subimage inside another image.
@@ -597,7 +706,28 @@ int ImageLocateSubImage(Image img1, int* px, int* py, Image img2) { ///
   assert (img1 != NULL);
   assert (img2 != NULL);
   // Insert your code here!
+
+  int img1Width = ImageWidth(img1);
+  int img1Height = ImageHeight(img1);
+  int img2Width = ImageWidth(img2);
+  int img2Height = ImageHeight(img2);
+
+  // Iterate over all possible positions in img1
+  for (int i = 0; i <= img1Height - img2Height; i++) {
+    for (int j = 0; j <= img1Width - img2Width; j++) {
+      // Check for a match at the current position
+      if (ImageMatchSubImage(img1, j, i, img2)) {
+        // Set the matching position and return 1
+        *px = j;
+        *py = i;
+        return 1;
+      }
+    }
+  }
+  // No match found, leave (*px, *py) untouched and return 0
+  return 0;
 }
+
 
 
 /// Filtering
