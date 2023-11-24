@@ -148,6 +148,10 @@ void ImageInit(void) { ///
   InstrCalibrate();
   InstrName[0] = "pixmem";  // InstrCount[0] will count pixel array acesses
   // Name other counters here...
+
+
+  InstrName[1] = "adds";
+  InstrCalibrate();
   
   
 }
@@ -745,7 +749,7 @@ void ImageBlur(Image img, int dx, int dy) {
   // Insert your code here!
   int width = ImageWidth(img);
   int height = ImageHeight(img);
-
+  InstrReset();
   // Create a temporary image to store the blurred image
   Image blurredImg = ImageCreate(width, height, ImageMaxval(img));
 
@@ -766,6 +770,8 @@ void ImageBlur(Image img, int dx, int dy) {
           if (ImageValidPos(img, l, k)) {
             // Add the pixel value to the sum and increment the count
             sum += ImageGetPixel(img, l, k);
+            InstrCount[0] += 3;  // to count array acesses
+            ///   InstrCount[1] += 1;
             count++;
           }
         }
@@ -797,4 +803,5 @@ void ImageBlur(Image img, int dx, int dy) {
 
   // Now it's safe to free the old pixel data
   free(oldPixels);
+  InstrPrint();
 }
