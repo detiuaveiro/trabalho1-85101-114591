@@ -22,7 +22,9 @@ extern const uint8 PixMax;
 
 // Type Image is a pointer to image objects
 typedef struct image *Image;
-
+#define COMP InstrCount[2]
+#define SOMAS InstrCount[3]
+#define MULTS InstrCount[4]
 /// Error handling functions
 
 /// Error cause.

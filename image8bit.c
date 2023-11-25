@@ -18,14 +18,15 @@
 //
 
 #include "image8bit.h"
-
+#include <math.h>
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "instrumentation.h"
 #include <string.h>
+#include <math.h>
+#include "instrumentation.h"
 
 // The data structure
 //
@@ -151,13 +152,17 @@ void ImageInit(void) { ///
 
 
   InstrName[1] = "adds";
-  InstrCalibrate();
+  InstrName[2] = "somas";
+  InstrName[3] = "multiplicacoes";
   
   
 }
 
 // Macros to simplify accessing instrumentation counters:
 #define PIXMEM InstrCount[0]
+#define ADDS InstrCount[1]
+#define COMP InstrCount[2]
+
 // Add more macros here...
 
 // TIP: Search for PIXMEM or InstrCount to see where it is incremented!
@@ -622,21 +627,37 @@ Image ImageCrop(Image img, int x, int y, int w, int h) { ///
 /// Paste img2 into position (x, y) of img1.
 /// This modifies img1 in-place: no allocation involved.
 /// Requires: img2 must fit inside img1 at position (x, y).
-void ImagePaste(Image img1, int x, int y, Image img2) { ///
+void ImagePaste(Image img1, int x, int y, Image img2) {
+  // Ensure the images are not NULL
   assert (img1 != NULL);
   assert (img2 != NULL);
+
+  // Ensure the rectangle to paste into is valid
   assert (ImageValidRect(img1, x, y, img2->width, img2->height));
-  // Insert your code here!
+
+  // Get the dimensions of the second image
   int img2Width = ImageWidth(img2);
   int img2Height = ImageHeight(img2);
 
+  // Iterate over each pixel in the second image
   for (int i = 0; i < img2Height; i++) {
     for (int j = 0; j < img2Width; j++) {
-      // Copy pixels from img2 to img1 at the specified position
-      uint8 pixel = ImageGetPixel(img2, j, i);
-      ImageSetPixel(img1, x + j, y + i, pixel);
+      // Calculate the index of the source (img2) and destination (img1) pixels
+      int dst_index = (y + i) * img1->width + (x + j);
+      int src_index = i * img2->width + j;
+
+      // Copy the pixel from img2 to img1
+      img1->pixel[dst_index] = img2->pixel[src_index];
     }
   }
+
+  if (img1->width >= img2->width && img1->height >= img2->height) {
+        printf("Dá para fazer paste");
+  } else {
+        printf("A imagem2 é muito grande para ser colada na imagem1.\n");
+  }
+  
+
 }
 
 /// Blend an image into a larger image.
@@ -682,28 +703,33 @@ int ImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
   assert (ImageValidPos(img1, x, y));
   // Insert your code here!
 
-  int img2Width = ImageWidth(img2);
-  int img2Height = ImageHeight(img2);
-
-  // Ensure that the subimage fits within the larger image at the specified position
-  if (!ImageValidRect(img1, x, y, img2Width, img2Height)) {
-    return 0;
+  // Verificar se a subimagem img2 cabe dentro da imagem img1 na posição (x, y)
+  if (!ImageValidRect(img1, x, y, img2->width, img2->height)) {
+    return 0;  // A subimagem não cabe, retorno falso
   }
 
-  for (int i = 0; i < img2Height; i++) {
-    for (int j = 0; j < img2Width; j++) {
-      // Get pixel values from img1 and img2 at the specified position
-      uint8 pixel1 = ImageGetPixel(img1, x + j, y + i);
-      uint8 pixel2 = ImageGetPixel(img2, j, i);
+  // Comparar pixels correspondentes
+  for (int srcY = 0; srcY < img2->height; srcY++) {
+    for (int srcX = 0; srcX < img2->width; srcX++) {
+      // Coordenadas na imagem img1
+      int destX = x + srcX;
+      int destY = y + srcY;
 
-      // Check if the pixels match
-      if (pixel1 != pixel2) {
-        return 0;  // Pixels do not match
+      // Obter valores dos pixels nas duas imagens
+      uint8 pixelValue1 = ImageGetPixel(img1, destX, destY);
+      uint8 pixelValue2 = ImageGetPixel(img2, srcX, srcY);
+
+
+      COMP++;
+      // Verificar se os pixels correspondentes são diferentes
+      if (pixelValue1 != pixelValue2) {
+        return 0;  // Não há correspondência, retorno falso
       }
     }
   }
 
-  return 1;  // All pixels match
+  // Todos os pixels correspondentes são iguais, retorno verdadeiro
+  return 1;
 }
 
 /// Locate a subimage inside another image.
@@ -714,6 +740,7 @@ int ImageLocateSubImage(Image img1, int* px, int* py, Image img2) { ///
   assert (img1 != NULL);
   assert (img2 != NULL);
   // Insert your code here!
+  //InstrReset();
 
   int img1Width = ImageWidth(img1);
   int img1Height = ImageHeight(img1);
@@ -721,8 +748,8 @@ int ImageLocateSubImage(Image img1, int* px, int* py, Image img2) { ///
   int img2Height = ImageHeight(img2);
 
   // Iterate over all possible positions in img1
-  for (int i = 0; i <= img1Height - img2Height; i++) {
-    for (int j = 0; j <= img1Width - img2Width; j++) {
+  for (int i = 0; i < img1Height - img2Height; i++) {
+    for (int j = 0; j < img1Width - img2Width; j++) {
       // Check for a match at the current position
       if (ImageMatchSubImage(img1, j, i, img2)) {
         // Set the matching position and return 1
@@ -733,6 +760,7 @@ int ImageLocateSubImage(Image img1, int* px, int* py, Image img2) { ///
     }
   }
   // No match found, leave (*px, *py) untouched and return 0
+  //InstrPrint();
   return 0;
 }
 
@@ -744,6 +772,7 @@ int ImageLocateSubImage(Image img1, int* px, int* py, Image img2) { ///
 /// Each pixel is substituted by the mean of the pixels in the rectangle
 /// [x-dx, x+dx]x[y-dy, y+dy].
 /// The image is changed in-place.
+/*
 void ImageBlur(Image img, int dx, int dy) {
   assert (img != NULL);
   // Insert your code here!
@@ -766,8 +795,10 @@ void ImageBlur(Image img, int dx, int dy) {
       // Iterate over the pixels in the rectangle [x-dx, x+dx]x[y-dy, y+dy]
       for (int k = i - dy; k <= i + dy; k++) {
         for (int l = j - dx; l <= j + dx; l++) {
+
           // Check if the current pixel is inside the image
           if (ImageValidPos(img, l, k)) {
+            SOMAS+=2;
             // Add the pixel value to the sum and increment the count
             sum += ImageGetPixel(img, l, k);
             InstrCount[0] += 3;  // to count array acesses
@@ -779,6 +810,7 @@ void ImageBlur(Image img, int dx, int dy) {
 
       // Calculate the mean of the pixels in the rectangle
       double mean = (double)sum / count;
+      MULTS++;
 
       // Add 0.5 before casting to round the result to the nearest integer
       uint8 resultPixel = (uint8)(mean + 0.5);
@@ -804,4 +836,66 @@ void ImageBlur(Image img, int dx, int dy) {
   // Now it's safe to free the old pixel data
   free(oldPixels);
   InstrPrint();
+}
+
+*/
+
+void ImageBlur(Image img, int dx, int dy) {
+  assert(img != NULL);
+
+  int width = ImageWidth(img);
+  int height = ImageHeight(img);
+
+  //InstrReset();
+
+  Image blurredImg = ImageCreate(width, height, ImageMaxval(img));
+
+  if (blurredImg == NULL) {
+    return;
+  }
+
+  int** pixelValues = malloc(height * sizeof(int*));
+  for (int i = 0; i < height; i++) {
+    pixelValues[i] = malloc(width * sizeof(int));
+    for (int j = 0; j < width; j++) {
+      pixelValues[i][j] = ImageValidPos(img, j, i) ? ImageGetPixel(img, j, i) : 0;
+    }
+  }
+
+  for (int i = 0; i < height; i++) {
+    for (int j = 0; j < width; j++) {
+      int sum = 0;
+      int count = 0;
+
+      for (int k = i - dy; k <= i + dy; k++) {
+        for (int l = j - dx; l <= j + dx; l++) {
+          if (k >= 0 && k < height && l >= 0 && l < width) {
+	    SOMAS+=2;
+            sum += pixelValues[k][l];
+            count++;
+	    
+          }
+        }
+      }
+
+      double mean = (double)sum / count;
+      MULTS++;
+      uint8 resultPixel = (uint8)(mean + 0.5);
+      resultPixel = (resultPixel > PixMax) ? PixMax : resultPixel;
+      ImageSetPixel(blurredImg, j, i, resultPixel);
+    }
+  }
+
+  for (int i = 0; i < height; i++) {
+    free(pixelValues[i]);
+  }
+  free(pixelValues);
+
+  uint8_t* oldPixels = img->pixel;
+  img->pixel = blurredImg->pixel;
+  blurredImg->pixel = NULL;
+  ImageDestroy(&blurredImg);
+  free(oldPixels);
+
+  //InstrPrint();
 }
