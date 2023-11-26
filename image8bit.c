@@ -216,7 +216,6 @@ Image ImageCreate(int width, int height, uint8 maxval) { ///
 
 }
 
-
 /// Destroy the image pointed to by (*imgp).
 ///   imgp : address of an Image variable.
 /// If (*imgp)==NULL, no operation is performed.
@@ -304,7 +303,7 @@ Image ImageLoad(const char* filename) { ///
 /// a partial and invalid file may be left in the system.
 int ImageSave(Image img, const char* filename) { ///
   assert (img != NULL);
-  int w = img->width;
+  int w = img->width; 
   int h = img->height;
   uint8 maxval = img->maxval;
   FILE* f = NULL;
@@ -445,8 +444,8 @@ void ImageNegative(Image img) { ///
   int height = ImageHeight(img); 
 
   for(int x = 0; x < width; x++){         
-    for(int y = 0; y < height; y++){   //Goes through each pixel
-      uint8 originalPixel = ImageGetPixel(img, x, y); //Get each pixel 
+    for(int y = 0; y < height; y++){                  //Goes through each pixel
+      uint8 originalPixel = ImageGetPixel(img, x, y); //Get each pixel level
       uint8 negativePixel = PixMax - originalPixel;   //255(maxval) - Original pixel level in the same position
       ImageSetPixel(img, x, y, negativePixel);        //Set the pixel as its "negative"
     }
@@ -491,7 +490,7 @@ void ImageBrighten(Image img, double factor) { ///
 
   for (int x = 0; x < width; x++) {
     for (int y = 0; y < height; y++) {
-      uint8 originalPixel = ImageGetPixel(img, x, y);
+      uint8 originalPixel = ImageGetPixel(img, x, y); //Get pixel level
 
       // Add 0.5 before casting to round the result to the nearest integer
       uint8 resultPixel = (uint8)((originalPixel * factor) + 0.5);
@@ -563,6 +562,7 @@ Image ImageMirror(Image img) { ///
   assert (img != NULL);
   // Insert your code here!
 
+  //Get image dimensions
   int width = ImageWidth(img);
   int height = ImageHeight(img);
 
@@ -598,7 +598,7 @@ Image ImageMirror(Image img) { ///
 /// On failure, returns NULL and errno/errCause are set accordingly.
 Image ImageCrop(Image img, int x, int y, int w, int h) { ///
   assert (img != NULL);
-  assert (ImageValidRect(img, x, y, w, h));
+  assert (ImageValidRect(img, x, y, w, h)); 
   // Insert your code here!
   
    // Create a new image with the specified width and height
@@ -613,7 +613,7 @@ Image ImageCrop(Image img, int x, int y, int w, int h) { ///
     for (int j = 0; j < h; j++) {
       // Copy pixels from the original image to the cropped image
       uint8 originalPixel = ImageGetPixel(img, x + j, y + i);
-      ImageSetPixel(croppedImg, j, i, originalPixel);
+      ImageSetPixel(croppedImg, j, i, originalPixel); //set each pixel into croppedImg
     }
   }
 
@@ -652,7 +652,7 @@ void ImagePaste(Image img1, int x, int y, Image img2) {
   }
 
   if (img1->width >= img2->width && img1->height >= img2->height) {
-        printf("Dá para fazer paste");
+        printf("Dá para fazer paste.\n");
   } else {
         printf("A imagem2 é muito grande para ser colada na imagem1.\n");
   }
@@ -669,6 +669,7 @@ void ImagePaste(Image img1, int x, int y, Image img2) {
 void ImageBlend(Image img1, int x, int y, Image img2, double alpha) { ///
   assert (img1 != NULL);
   assert (img2 != NULL);
+  // Verifica que a imagem img2 cabe dentro da imagem img1 na posição (x, y)
   assert (ImageValidRect(img1, x, y, img2->width, img2->height));
   // Insert your code here!
 
@@ -720,7 +721,7 @@ int ImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
       uint8 pixelValue2 = ImageGetPixel(img2, srcX, srcY);
 
 
-      COMP++;
+      COMP++; 
       // Verificar se os pixels correspondentes são diferentes
       if (pixelValue1 != pixelValue2) {
         return 0;  // Não há correspondência, retorno falso
@@ -742,6 +743,7 @@ int ImageLocateSubImage(Image img1, int* px, int* py, Image img2) { ///
   // Insert your code here!
   //InstrReset();
 
+  //Get both images widths & heights
   int img1Width = ImageWidth(img1);
   int img1Height = ImageHeight(img1);
   int img2Width = ImageWidth(img2);
@@ -843,58 +845,70 @@ void ImageBlur(Image img, int dx, int dy) {
 void ImageBlur(Image img, int dx, int dy) {
   assert(img != NULL);
 
+  //Get the width and height of the image
   int width = ImageWidth(img);
   int height = ImageHeight(img);
 
   //InstrReset();
 
+  // Create a new image to store the blurred result
   Image blurredImg = ImageCreate(width, height, ImageMaxval(img));
 
+  // Check if the image creation was successful
   if (blurredImg == NULL) {
     return;
   }
 
+  // Allocate memory to store pixel values of the input image
   int** pixelValues = malloc(height * sizeof(int*));
   for (int i = 0; i < height; i++) {
     pixelValues[i] = malloc(width * sizeof(int));
+    // Populate pixelValues with the pixel values of the input image
     for (int j = 0; j < width; j++) {
+      // If the pixel position is valid, use the pixel value; otherwise, set to 0
       pixelValues[i][j] = ImageValidPos(img, j, i) ? ImageGetPixel(img, j, i) : 0;
     }
   }
-
+  // Apply the blur filter to each pixel in the image
   for (int i = 0; i < height; i++) {
     for (int j = 0; j < width; j++) {
       int sum = 0;
       int count = 0;
-
+      // Iterate over the rectangular region around the current pixel
       for (int k = i - dy; k <= i + dy; k++) {
         for (int l = j - dx; l <= j + dx; l++) {
+          // Check if the current position is within the bounds of the image
           if (k >= 0 && k < height && l >= 0 && l < width) {
-	    SOMAS+=2;
+            // Accumulate the pixel values and count for computing the mean
+	          SOMAS+=2;
             sum += pixelValues[k][l];
             count++;
 	    
           }
         }
       }
-
+      // Calculate the mean pixel value for the neighborhood
       double mean = (double)sum / count;
       MULTS++;
+       // Round to the nearest integer and ensure the result is within the valid pixel range
       uint8 resultPixel = (uint8)(mean + 0.5);
       resultPixel = (resultPixel > PixMax) ? PixMax : resultPixel;
+      // Set the blurred pixel value in the new image
       ImageSetPixel(blurredImg, j, i, resultPixel);
     }
   }
-
+  // Free the memory allocated for pixelValues
   for (int i = 0; i < height; i++) {
     free(pixelValues[i]);
   }
   free(pixelValues);
-
+  // Swap the pixel arrays between the original image and the blurred image
   uint8_t* oldPixels = img->pixel;
   img->pixel = blurredImg->pixel;
   blurredImg->pixel = NULL;
+  // Destroy the temporary blurred image to free its resources
   ImageDestroy(&blurredImg);
+  // Free the memory of the original pixel values
   free(oldPixels);
 
   //InstrPrint();
