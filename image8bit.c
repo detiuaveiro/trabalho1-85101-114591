@@ -10,8 +10,8 @@
 /// 2013, 2023
 
 // Student authors (fill in below):
-// NMec:  Name:
-// 
+// NMec:85101  Name: Gonçalo Freitas
+// NMec:114591 Name: Sofia Marrafa 
 // 
 // 
 // Date:
