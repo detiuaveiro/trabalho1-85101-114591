@@ -748,8 +748,8 @@ int ImageLocateSubImage(Image img1, int* px, int* py, Image img2) { ///
   int img2Height = ImageHeight(img2);
 
   // Iterate over all possible positions in img1
-  for (int i = 0; i < img1Height - img2Height; i++) {
-    for (int j = 0; j < img1Width - img2Width; j++) {
+  for (int i = 0; i <= img1Height - img2Height; i++) {
+    for (int j = 0; j <= img1Width - img2Width; j++) {
       // Check for a match at the current position
       if (ImageMatchSubImage(img1, j, i, img2)) {
         // Set the matching position and return 1
